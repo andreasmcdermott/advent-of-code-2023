@@ -1,39 +1,38 @@
 const std = @import("std");
 const h = @import("./helpers.zig");
 
+const print = std.debug.print;
+
 pub fn run() !void {
-    try part1();
-    try part2();
-}
-
-fn part1() !void {
-    var val: i32 = 0;
-
     var alloc = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer alloc.deinit();
 
-    var it = try h.iterate_file_by_line(alloc.allocator(), "01_1");
+    try part1(alloc.allocator());
+    try part2(alloc.allocator());
+}
+
+fn part1(allocator: std.mem.Allocator) !void {
+    var val: i32 = 0;
+
+    var it = try h.iterate_file_by_line(allocator, "01");
 
     while (it.next()) |line| {
         val += try find_number_by_char(line);
     }
 
-    std.debug.print("{}\n", .{val});
+    print("{}\n", .{val});
 }
 
-fn part2() !void {
+fn part2(allocator: std.mem.Allocator) !void {
     var val: i32 = 0;
 
-    var alloc = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer alloc.deinit();
-
-    var it = try h.iterate_file_by_line(alloc.allocator(), "01_2");
+    var it = try h.iterate_file_by_line(allocator, "01");
 
     while (it.next()) |line| {
         val += try find_number_by_char_or_word(line);
     }
 
-    std.debug.print("{}\n", .{val});
+    print("{}\n", .{val});
 }
 
 const EMPTY = ' ';

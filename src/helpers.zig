@@ -1,14 +1,5 @@
 const std = @import("std");
 
-pub fn print(str: []const u8) void {
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
-
-    stdout.print("{s}\n", .{str}) catch std.debug.print("Error printing", .{});
-    bw.flush() catch std.debug.print("Error flushing", .{});
-}
-
 pub fn each_line(str: []const u8) std.mem.SplitIterator(u8, .any) {
     return std.mem.splitAny(u8, str, "\n");
 }
