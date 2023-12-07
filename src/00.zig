@@ -12,24 +12,24 @@ pub fn run() !void {
 }
 
 fn part1(allocator: std.mem.Allocator) !void {
-    var val: i32 = 0;
+    var val: u32 = 0;
 
     var it = try h.iterate_file_by_line(allocator, "00");
 
     while (it.next()) |line| {
-        print("line: {s}\n", .{line});
+        print("{s}\n", .{line});
     }
 
     print("{}\n", .{val});
 }
 
 fn part2(allocator: std.mem.Allocator) !void {
-    var val: i32 = 0;
+    var val: u32 = 0;
 
     var it = try h.iterate_file_by_line(allocator, "00");
 
     while (it.next()) |line| {
-        print("line: {s}\n", .{line});
+        print("{s}\n", .{line});
     }
 
     print("{}\n", .{val});
