@@ -8,12 +8,13 @@ pub fn run() !void {
     defer alloc.deinit();
 
     try part1(alloc.allocator());
-    // try part2(alloc.allocator());
+    try part2(alloc.allocator());
 }
 
-const SymbolPos = struct {
+const Symbol = struct {
     x: usize,
     y: usize,
+    value: u8,
 };
 
 const offsets = [_]i32{ -1, 0, 1 };
@@ -22,7 +23,7 @@ fn part1(allocator: std.mem.Allocator) !void {
     var result: u32 = 0;
 
     // Position of all symbols we find:
-    var symbols = std.ArrayList(SymbolPos).init(allocator);
+    var symbols = std.ArrayList(Symbol).init(allocator);
     defer symbols.deinit();
 
     // Mapping between part id and value. Once a value is used, its id is removed from this map (to avoid double counting).
@@ -37,7 +38,7 @@ fn part1(allocator: std.mem.Allocator) !void {
     var next_id: u32 = 0;
     var y: usize = 0;
 
-    var it = try h.iterate_file_by_line(allocator, "00");
+    var it = try h.iterate_file_by_line(allocator, "03");
 
     while (it.next()) |line| {
         var x: usize = 0;
@@ -72,7 +73,7 @@ fn part1(allocator: std.mem.Allocator) !void {
                     next_id += 1;
                 }
             } else {
-                try symbols.append(SymbolPos{ .x = x, .y = y });
+                try symbols.append(Symbol{ .x = x, .y = y, .value = c });
                 x += 1;
             }
         }
@@ -105,15 +106,104 @@ fn part1(allocator: std.mem.Allocator) !void {
 }
 
 fn part2(allocator: std.mem.Allocator) !void {
-    var val: i32 = 0;
+    var result: u32 = 0;
 
-    var it = try h.iterate_file_by_line(allocator, "00");
+    // Position of all symbols we find:
+    var symbols = std.ArrayList(Symbol).init(allocator);
+    defer symbols.deinit();
+
+    // Mapping between part id and value. Once a value is used, its id is removed from this map (to avoid double counting).
+    var partValues = std.AutoHashMap(u32, u32).init(allocator);
+    defer partValues.deinit();
+
+    // Mapping between part position and id.
+    // The ID is used so that we can insert the same value in multiple positions, without double counting it.
+    var partPositions = std.StringHashMap(u32).init(allocator);
+    defer partPositions.deinit();
+
+    var next_id: u32 = 1;
+    var y: usize = 0;
+
+    var it = try h.iterate_file_by_line(allocator, "03");
 
     while (it.next()) |line| {
-        print("line: {s}\n", .{line});
+        var x: usize = 0;
+        while (x < line.len) {
+            var c = line[x];
+
+            if (c == '.') {
+                x += 1;
+            } else if (is_digit(c)) {
+                var x0: usize = x;
+                x += 1;
+
+                while (x < line.len) { // Move forward until we find a non-digit char.
+                    if (!is_digit(line[x])) break;
+
+                    x += 1;
+                }
+
+                var value_as_str = line[x0..x];
+                var v = std.fmt.parseInt(u32, value_as_str, 10) catch 0;
+
+                if (v > 0) {
+                    try partValues.put(next_id, v); // Insert the value using a new ID.
+                    for (value_as_str, 0..) |_, x_offset| { // Loop through each char of the value and insert the ID in each position.
+                        var key = std.fmt.allocPrint(allocator, "{},{}", .{ y, x0 + x_offset }) catch "";
+
+                        if (key.len > 0 and v > 0) {
+                            try partPositions.put(key, next_id);
+                        }
+                    }
+
+                    next_id += 1;
+                }
+            } else {
+                try symbols.append(Symbol{ .x = x, .y = y, .value = c });
+                x += 1;
+            }
+        }
+        y += 1;
     }
 
-    print("{}\n", .{val});
+    // Loop through all symbols and look for adjacent parts.
+    for (symbols.items) |symbol| {
+        if (symbol.value != '*') continue;
+
+        var sum = [2]u32{ 0, 0 };
+        var parts = [2]u32{ 0, 0 };
+        var i: u32 = 0;
+
+        for (offsets) |xx| {
+            for (offsets) |yy| {
+                if (i >= 2) break;
+
+                var sx: i32 = @as(i32, @intCast(symbol.x));
+                var sy: i32 = @as(i32, @intCast(symbol.y));
+
+                if (xx == 0 and yy == 0) continue;
+                if ((sx + xx < 0) or (sy + yy < 0)) continue;
+
+                var key = std.fmt.allocPrint(allocator, "{},{}", .{ sy + yy, sx + xx }) catch "";
+
+                if (partPositions.get(key)) |id| {
+                    if (std.mem.indexOfScalar(u32, &parts, id)) |_| {} else {
+                        if (partValues.get(id)) |val| {
+                            sum[i] = val;
+                            parts[i] = id;
+                            i += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (i == 2) {
+            result += sum[0] * sum[1];
+        }
+    }
+
+    print("{}\n", .{result});
 }
 
 fn is_digit(c: u8) bool {
