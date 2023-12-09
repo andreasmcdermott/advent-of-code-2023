@@ -4,6 +4,10 @@ pub fn to_u32(str: []const u8) ?u32 {
     return std.fmt.parseInt(u32, str, 10) catch null;
 }
 
+pub fn to_u64(str: []const u8) ?u64 {
+    return std.fmt.parseInt(u64, str, 10) catch null;
+}
+
 pub fn each_line(str: []const u8) std.mem.SplitIterator(u8, .any) {
     return std.mem.splitAny(u8, str, "\n");
 }
