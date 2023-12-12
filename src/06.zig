@@ -7,8 +7,8 @@ pub fn run() !void {
     var alloc = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer alloc.deinit();
 
-    try part1(alloc.allocator());
-    // try part2(alloc.allocator());
+    // try part1(alloc.allocator());
+    try part2(alloc.allocator());
 }
 
 const Race = struct { time: u32 = 0, minDistance: u32 = 0 };
@@ -79,14 +79,56 @@ fn calcDist(velocity: u32, travelTime: u32) u32 {
     return velocity * travelTime;
 }
 
-fn part2(allocator: std.mem.Allocator) !void {
-    var val: u32 = 0;
+const Race2 = struct { time: u64 = 0, minDistance: u64 = 0 };
 
-    var it = try h.iterate_file_by_line(allocator, "00");
+fn part2(allocator: std.mem.Allocator) !void {
+    var val: u64 = 0;
+
+    var it = try h.iterate_file_by_line(allocator, "06");
+
+    var race: Race2 = Race2{};
 
     while (it.next()) |line| {
-        print("{s}\n", .{line});
+        var output = try allocator.dupe(u8, line);
+        var i: usize = 0;
+
+        for (line[0..]) |c| {
+            if (c >= '0' and c <= '9') {
+                output[i] = c;
+                i += 1;
+            }
+        }
+
+        var num = h.to_u64(output[0..i]) orelse 0;
+
+        if (race.time == 0) {
+            race.time = num;
+        } else {
+            race.minDistance = num;
+            break;
+        }
     }
+
+    var ms: u64 = 0;
+
+    var min: u64 = 0;
+    var max: u64 = 0;
+
+    while (ms <= race.time and (min == 0 or max == 0)) {
+        var dist: u64 = ms * (race.time - ms);
+        if (dist > race.minDistance) {
+            min = ms;
+        }
+
+        dist = (race.time - ms) * ms;
+        if (dist > race.minDistance) {
+            max = race.time - ms;
+        }
+
+        ms += 1;
+    }
+
+    val = max - min + 1;
 
     print("{}\n", .{val});
 }
